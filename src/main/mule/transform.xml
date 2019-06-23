@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="adb07c72-13ad-4f2f-8735-68fcdaeeddd7">
+		<http:request-connection host="${openweather-api.host}"/>
+	</http:request-config>
+	<flow name="post:\transform:code-test-config" doc:id="9f0d8999-8636-4853-a98f-e5758519ab55" >
+		<logger level="INFO" doc:name="Log Input" doc:id="2302b9b0-42be-4852-ab3b-8eae3c8d94c7" message="#[payload]" />
+		<ee:transform doc:name="Transform Message" doc:id="460d9f17-a02d-47d5-8438-65f9552e6625" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+	
+zip(payload.Header, payload.Items)
+	reduce((val, obj={}) -> 
+		obj ++ {(val[0] as String): val[1]}
+	)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-variable value="#[payload]" doc:name="Set Person Details" doc:id="f55bdd51-d8b9-4ea6-bfd2-75398e862dd5" variableName="personDetails"/>
+		<http:request method="GET" doc:name="Request Weather Data" doc:id="220e1576-4980-47d1-b9f3-68d9d053ee57" config-ref="HTTP_Request_configuration" path="${openweather-api.endpoint}">
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"q" : vars.personDetails.city,
+	"appid" : "${openweather-api.apikey}"
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="90f780c8-34cf-4e63-9c08-619210959910" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+import java!utils::Utils
+var offset = Utils::getUtcTimezoneOffset(payload.timezone) as String
+var datetime = payload.dt as DateTime >> ("UTC" ++ offset) as TimeZone
+---
+{
+	lastName: vars.personDetails.lastName,
+	firstName: vars.personDetails.firstName,
+	timezone: "UTC" ++ offset,
+	offset: offset,
+	fullName: vars.personDetails.firstName as String ++ " " ++ 
+		vars.personDetails.lastName as String,
+	temperatureCelsius: payload.main.temp - 273.15,
+	dateTime: datetime,
+	city: vars.personDetails.city,
+	country: vars.personDetails.country
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Log Output" doc:id="f1de4d43-8a41-4bb1-9105-a61a43d3a8ae" message="#[payload]"/>
+	</flow>
+</mule>

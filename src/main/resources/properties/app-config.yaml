@@ -1,0 +1,8 @@
+openweather-api:
+  host: "api.openweathermap.org"
+  endpoint: "/data/2.5/weather"
+  apikey: "0a5d3b211b5580690bc234bbbe2ee3ac"
+
+code-test-api:
+  port: "8081"
+  path: "/api/v1/*"

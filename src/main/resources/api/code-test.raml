@@ -1,0 +1,22 @@
+#%RAML 1.0
+title: Coding Test API
+version: v1.0
+
+/transform:
+  description: transform the person payload and get external weather data
+  post:
+    responses:
+      200:
+        body:
+          application/json: | 
+            {
+              "lastName": "Smith",
+              "firstName": "John",
+              "timeZone": "",
+              "offset": "",
+              "fullName": "John Smith",
+              "temperatureCelsius": 0,
+              "dateTime": "",
+              "city": "Melbourne",
+              "country": "Australia"
+            }
